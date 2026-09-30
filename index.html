@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Status · Stratkern</title>
+<meta name="description" content="Betriebsstatus der Oase und der Website von Stratkern, gemessen außerhalb unserer Server.">
+<link rel="icon" href="https://stratkern.com/icon.svg" type="image/svg+xml">
+<style>
+  :root { --ink: hsl(0 0% 6%); --muted: hsl(0 0% 42%); --grund: hsl(44 24% 97%); --karte: #fff; --linie: hsl(0 0% 88%);
+          --gut: hsl(152 55% 36%); --halb: hsl(28 85% 48%); --schlecht: hsl(0 68% 46%); --leer: hsl(0 0% 86%); }
+  @media (prefers-color-scheme: dark) {
+    :root { --ink: hsl(0 0% 94%); --muted: hsl(0 0% 64%); --grund: hsl(0 0% 8%); --karte: hsl(0 0% 12%); --linie: hsl(0 0% 22%); --leer: hsl(0 0% 26%); }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--grund); color: var(--ink); font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; line-height: 1.5; }
+  main { max-width: 760px; margin: 0 auto; padding: 48px 16px 64px; }
+  a { color: inherit; }
+  .kopf { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 28px; margin: 0; letter-spacing: -0.01em; }
+  .zeit { color: var(--muted); font-size: 14px; }
+  .gesamt { margin: 24px 0; padding: 18px 20px; border-radius: 14px; background: var(--karte); border: 1px solid var(--linie); font-weight: 600; display: flex; gap: 10px; align-items: center; }
+  .punkt { width: 10px; height: 10px; border-radius: 50%; flex: none; }
+  .karte { background: var(--karte); border: 1px solid var(--linie); border-radius: 14px; overflow: hidden; }
+  .zeile { padding: 16px 20px; border-top: 1px solid var(--linie); }
+  .zeile:first-child { border-top: 0; }
+  .oben { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+  .name { font-weight: 600; }
+  .zustand { font-size: 14px; display: flex; gap: 8px; align-items: center; }
+  .balken { display: flex; gap: 2px; margin-top: 12px; height: 28px; }
+  .balken span { flex: 1; border-radius: 2px; background: var(--leer); }
+  .unter { display: flex; justify-content: space-between; color: var(--muted); font-size: 12px; margin-top: 6px; }
+  .text { color: var(--muted); font-size: 14px; margin-top: 32px; }
+  .text p { margin: 0 0 10px; }
+  .l30 { display: none; }
+  @media (max-width: 480px) { .balken span:nth-child(-n+60) { display: none; } .l90 { display: none; } .l30 { display: inline; } }
+</style>
+</head>
+<body>
+<main>
+  <div class="kopf">
+    <h1>Status</h1>
+    <span class="zeit" id="zeit">wird geladen …</span>
+  </div>
+  <div class="gesamt" id="gesamt"><span class="punkt" style="background:var(--leer)"></span>Messdaten werden geladen</div>
+  <div class="karte" id="liste"></div>
+  <div class="text">
+    <p>Gemessen wird alle 15 Minuten von GitHub Actions aus, also außerhalb unserer eigenen Server. Fällt unser Server aus, bleibt diese Seite erreichbar. Eine Komponente gilt als gestört, wenn sie in drei Versuchen im Abstand von 15 Sekunden nicht richtig antwortet.</p>
+    <p>Die Balken zeigen die letzten 90 Tage, auf schmalen Bildschirmen die letzten 30. Grün: in jeder Messung erreichbar. Orange: in einzelnen Messungen gestört. Rot: in mehr als einem Zehntel der Messungen gestört. Grau: an diesem Tag noch nicht gemessen.</p>
+    <p>Sicherheitsmeldungen an <a href="mailto:jannik.moser@stratkern.com">jannik.moser@stratkern.com</a>. Mehr zu Datenorten und Sicherung: <a href="https://stratkern.com/">stratkern.com</a>. <a href="https://stratkern.com/impressum">Impressum</a> · <a href="https://stratkern.com/datenschutz">Datenschutz</a></p>
+  </div>
+</main>
+<script>
+(async () => {
+  const farbe = { 'in Betrieb': 'var(--gut)', 'teilweise gestört': 'var(--halb)', 'gestört': 'var(--schlecht)', 'nicht gemessen': 'var(--leer)' };
+  const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  let a, v;
+  try {
+    [a, v] = await Promise.all(['daten/aktuell.json', 'daten/verlauf.json'].map((p) => fetch(p + '?t=' + Date.now(), { cache: 'no-store' }).then((r) => r.json())));
+  } catch {
+    document.getElementById('gesamt').lastChild.textContent = 'Messdaten konnten nicht geladen werden';
+    document.getElementById('zeit').textContent = '';
+    return;
+  }
+  const gemessen = new Date(a.gemessen);
+  const alterMin = Math.round((Date.now() - gemessen) / 60000);
+  document.getElementById('zeit').textContent = 'Letzte Messung: ' + gemessen.toLocaleString('de-DE', { dateStyle: 'medium', timeStyle: 'short' }) + (alterMin > 60 ? ' (veraltet)' : '');
+  const gemessene = a.komponenten.filter((k) => k.zustand !== 'nicht gemessen');
+  const stoer = gemessene.filter((k) => k.zustand !== 'in Betrieb');
+  const g = document.getElementById('gesamt');
+  g.innerHTML = `<span class="punkt" style="background:${stoer.length ? farbe[stoer.some((k) => k.zustand === 'gestört') ? 'gestört' : 'teilweise gestört'] : farbe['in Betrieb']}"></span>` +
+    (stoer.length ? `Störung: ${stoer.map((k) => esc(k.name)).join(', ')}` : 'Alle Systeme in Betrieb');
+  const tage = [];
+  for (let i = 89; i >= 0; i--) { const d = new Date(Date.now() - i * 864e5); tage.push(d.toISOString().slice(0, 10)); }
+  document.getElementById('liste').innerHTML = a.komponenten.map((k) => {
+    let mess = 0, stoe = 0;
+    const balken = tage.map((t) => {
+      const w = v.tage?.[t]?.[k.id];
+      if (!w) return `<span title="${t}: keine Messung"></span>`;
+      mess += w.messungen; stoe += w.gestoert;
+      const f = w.gestoert === 0 ? 'var(--gut)' : w.gestoert / w.messungen > 0.1 ? 'var(--schlecht)' : 'var(--halb)';
+      return `<span style="background:${f}" title="${t}: ${w.messungen - w.gestoert} von ${w.messungen} Messungen erreichbar"></span>`;
+    }).join('');
+    const quote = mess ? (100 * (mess - stoe) / mess).toFixed(2).replace('.', ',') + ' % erreichbar' : 'noch keine Messung';
+    return `<div class="zeile"><div class="oben"><span class="name">${esc(k.name)}</span>` +
+      `<span class="zustand"><span class="punkt" style="background:${farbe[k.zustand]}"></span>${esc(k.zustand)}${k.hinweis ? ' · ' + esc(k.hinweis) : ''}</span></div>` +
+      `<div class="balken">${balken}</div><div class="unter"><span><span class="l90">vor 90 Tagen</span><span class="l30">vor 30 Tagen</span></span><span>${quote}</span><span>heute</span></div></div>`;
+  }).join('');
+})();
+</script>
+</body>
+</html>
