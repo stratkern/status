@@ -1,4 +1,4 @@
-# Misst alle 15 Minuten von GitHub-Infrastruktur aus (nicht unser Server) und legt das Ergebnis ins Repo.
+# Misst alle 15 Minuten (Zeitplan neu registriert 30.09.2026) von GitHub-Infrastruktur aus (nicht unser Server) und legt das Ergebnis ins Repo.
 # GitHub Pages liefert index.html und daten/ als status.stratkern.com aus. GitHub startet geplante Läufe nach
 # eigener Auslastung, Verzögerungen von einigen Minuten sind normal; die Seite nennt die Zeit der letzten Messung.
 name: Messen
