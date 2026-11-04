@@ -1,17 +1,17 @@
 {
- "gemessen": "2026-11-04T07:39:51.918Z",
+ "gemessen": "2026-11-04T15:45:35.364Z",
  "komponenten": [
   {
    "id": "website",
    "name": "Website stratkern.com",
    "zustand": "in Betrieb",
-   "antwortzeit_ms": 650
+   "antwortzeit_ms": 667
   },
   {
    "id": "oase",
    "name": "Oase: Anmeldung und Oberfläche",
    "zustand": "in Betrieb",
-   "antwortzeit_ms": 501
+   "antwortzeit_ms": 637
   },
   {
    "id": "kunden",
@@ -24,13 +24,13 @@
    "id": "automation",
    "name": "Wissens- und Automationsdienste",
    "zustand": "in Betrieb",
-   "antwortzeit_ms": 352
+   "antwortzeit_ms": 453
   },
   {
    "id": "datenbank",
    "name": "Datenbank und Anmeldedienst (Frankfurt)",
    "zustand": "in Betrieb",
-   "antwortzeit_ms": 667
+   "antwortzeit_ms": 837
   }
  ]
 }
